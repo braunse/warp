@@ -18,6 +18,21 @@ async fn set_and_get() {
 }
 
 #[tokio::test]
+async fn with_mut() {
+    let put = warp::ext::with_mut(|e| {
+        e.insert(Ext1(42));
+        Ok(())
+    });
+    let extract = warp::ext::get::<Ext1>();
+
+    let extracted = warp::test::request()
+        .filter(&put.and(extract))
+        .await
+        .unwrap();
+    assert_eq!(extracted, Ext1(42));
+}
+
+#[tokio::test]
 async fn get_missing() {
     let ext = warp::ext::get().map(|e: Ext1| e.0.to_string());
 

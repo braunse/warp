@@ -3,8 +3,9 @@
 use std::convert::Infallible;
 
 use futures::future;
+use http::Extensions;
 
-use crate::filter::{filter_fn_one, Filter};
+use crate::filter::{filter_fn, filter_fn_one, Filter};
 use crate::reject::{self, Rejection};
 
 /// Get a previously set extension of the current route.
@@ -28,6 +29,14 @@ pub fn get<T: Clone + Send + Sync + 'static>(
 pub fn optional<T: Clone + Send + Sync + 'static>(
 ) -> impl Filter<Extract = (Option<T>,), Error = Infallible> + Copy {
     filter_fn_one(|route| future::ok(route.extensions().get::<T>().cloned()))
+}
+
+/// Change the extensions of the current route.
+pub fn with_mut<F>(func: F) -> impl Filter<Extract = (), Error = Rejection> + Clone
+where
+    F: Fn(&mut Extensions) -> Result<(), Rejection> + Clone + 'static,
+{
+    filter_fn(move |route| future::ready(func(route.extensions_mut())))
 }
 
 unit_error! {
